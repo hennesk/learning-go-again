@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      # POSTGRES_USER: myuser
+      PG_USER: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel debug
+
+  # builder:
+  #   image: golang:latest
+  #   container_name: go_builder
+  #   volumes:
+  #     - ./:/app
+  #   working_dir: /app
+  #   command: go build -o identity
+
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - db
+      - redis
+    environment:
+      SOME_VAR: somevalue
+      REDIS_URL: redis://redis_cache:6379
+      # DATABASE_HOST: db
+      # DATABASE_PORT: 5432
+      # DATABASE_NAME: mydatabase
+      # DATABASE_USER: myuser
+      # DATABASE_PASSWORD: mypassword
+
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: ./identity
+
+volumes:
+  postgres_data:
+  redis_data:
